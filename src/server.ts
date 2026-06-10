@@ -7,7 +7,7 @@ import { payableRoutes, receivableRoutes } from "./routes/bills.js";
 import { invoiceRoutes, categoryRoutes, productRoutes, dashboardRoutes, companyRoutes } from "./routes/resources.js";
 const app = Fastify({ logger: { level: "info" } });
 async function main() {
-  await app.register(fastifyCors, { origin: ["http://localhost:5173"], credentials: true });
+  await app.register(fastifyCors, { origin: process.env.CORS_ORIGIN?.split(",") ?? ["http://localhost:5173"], credentials: true });
   await app.register(fastifyJwt, { secret: process.env.JWT_SECRET ?? "fingest-dev-secret" });
   await app.register(authRoutes, { prefix: "/auth" });
   await app.register(dashboardRoutes, { prefix: "/dashboard" });
