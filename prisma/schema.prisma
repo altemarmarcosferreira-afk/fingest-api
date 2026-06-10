@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model Company {
+  id            String   @id @default(uuid())
+  razaoSocial   String
+  cnpj          String   @unique
+  regime        String   @default("SIMPLES_NACIONAL")
+  email         String?
+  plan          String   @default("PRO")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  users         User[]
+  transactions  Transaction[]
+  payables      Payable[]
+  receivables   Receivable[]
+  invoices      Invoice[]
+  products      Product[]
+  categories    Category[]
+  @@map("companies")
+}
+model User {
+  id            String   @id @default(uuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          String   @default("ADMIN")
+  refreshToken  String?
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([companyId])
+  @@map("users")
+}
+model Category {
+  id           String        @id @default(uuid())
+  companyId    String
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name         String
+  type         String
+  color        String        @default("#1D9E75")
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+  @@unique([companyId, name, type])
+  @@index([companyId])
+  @@map("categories")
+}
+model Transaction {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  type        String
+  description String
+  amount      Decimal  @db.Decimal(15, 2)
+  date        DateTime @db.Date
+  status      String   @default("PENDENTE")
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([companyId])
+  @@index([companyId, date])
+  @@map("transactions")
+}
+model Payable {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  description String
+  amount      Decimal  @db.Decimal(15, 2)
+  dueDate     DateTime @db.Date
+  status      String   @default("PENDENTE")
+  paidAt      DateTime?
+  supplier    String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([companyId])
+  @@map("payables")
+}
+model Receivable {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  description String
+  amount      Decimal  @db.Decimal(15, 2)
+  dueDate     DateTime @db.Date
+  status      String   @default("PENDENTE")
+  paidAt      DateTime?
+  customer    String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([companyId])
+  @@map("receivables")
+}
+model Invoice {
+  id           String   @id @default(uuid())
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  number       Int
+  tomadorName  String
+  tomadorCnpj  String?
+  value        Decimal  @db.Decimal(15, 2)
+  issueDate    DateTime @db.Date
+  status       String   @default("AGUARDANDO")
+  xmlUrl       String?
+  pdfUrl       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@map("invoices")
+}
+model Product {
+  id        String   @id @default(uuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name      String
+  sku       String?
+  qty       Int      @default(0)
+  minQty    Int      @default(0)
+  unitCost  Decimal  @db.Decimal(15, 2) @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([companyId])
+  @@map("products")
+}
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([userId])
+  @@map("refresh_tokens")
+}
